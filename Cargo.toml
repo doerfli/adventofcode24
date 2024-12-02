@@ -3,6 +3,14 @@ name = "adventofcode24"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
 
+
+[[bin]]
+name = "01main"
+path = "src/01/main.rs"
+
+
+[[bin]]
+name = "01main2"
+path = "src/01/main2.rs"
 

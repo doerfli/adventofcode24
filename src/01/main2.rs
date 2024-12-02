@@ -27,7 +27,7 @@ fn main() {
 
 fn get_lists() -> (Vec<i32>, Vec<i32>) {
     // let contents = fs::read_to_string("01/testinput.txt")
-    let contents = fs::read_to_string("01/input.txt")
+    let contents = fs::read_to_string("src/01/input.txt")
         .expect("Should have been able to read the file");
 
     let mut list1: Vec<i32> = Vec::new();
