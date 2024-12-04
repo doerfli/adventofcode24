@@ -35,4 +35,7 @@ path = "src/03/main2.rs"
 name = "04main"
 path = "src/04/main.rs"
 
+[[bin]]
+name = "04main2"
+path = "src/04/main2.rs"
 
