@@ -16,89 +16,71 @@ fn main() {
     (guard_x, guard_y, guard_orientation) = find_guard(&map);
     println!("Guard is at: ({}, {}), facing: {}", guard_x, guard_y, guard_orientation);
 
+    let solved_map = solve_guard_track(&map);
 
-    while true {
-        let old_x = guard_x;
-        let old_y = guard_y;
-
-        map[old_y][old_x] = 'X';
-        steps.push((guard_x, guard_y, guard_orientation));
-        println!("Guard is at: ({}, {}), facing: {}, step: {}", guard_x, guard_y, guard_orientation, steps.len());
-        
-        if check_modified_map_for_loop(&map, &steps, &guard_x, &guard_y, &guard_orientation, &len_x, &len_y) {
-            modified_map_loop += 1;
+    println!("Solved map:");
+    for y in 0..len_y {
+        for x in 0..len_x {
+            print!("{}", solved_map[y][x]);
         }
-
-        let object_ahead = get_object_ahead(&map, &guard_x, &guard_y, &guard_orientation, &len_x, &len_y);
-
-        match object_ahead {
-            'A' => {
-                break;
-            }
-            '#' => {
-                match guard_orientation {
-                    Orientation::N => {
-                        guard_orientation = Orientation::E;
-                    }
-                    Orientation::E => {
-                        guard_orientation = Orientation::S;
-                    }
-                    Orientation::S => {
-                        guard_orientation = Orientation::W;
-                    }
-                    Orientation::W => {
-                        guard_orientation = Orientation::N;
-                    }
-                }
-            }
-            _ => {
-                match guard_orientation {
-                    Orientation::N => {
-                        guard_y -= 1;
-                    }
-                    Orientation::E => {
-                        guard_x += 1;
-                    }
-                    Orientation::S => {
-                        guard_y += 1;
-                    }
-                    Orientation::W => {
-                        guard_x -= 1;
-                    }
-                }
-            }
-        }
-
-        map[guard_y][guard_x] = 'G';
+        println!("");
     }
 
-    let mut count = 0;
 
     for y in 0..len_y {
         for x in 0..len_x {
-            print!("{}", map[y][x]);
-            if map[y][x] == 'X' {
-                count += 1;
+            if map[y][x] == '#' {
+                continue;
+            }
+            if map[y][x] == '^' {
+                continue;
+            }
+            if !has_passed(&solved_map, &x, &y, &len_x, &len_y) {
+                continue;
+            }
+
+            // println!("Checking: ({}, {})", x, y);
+            let is_loop = check_guard_loop(modify_map(&map, &x, &y), &guard_x, &guard_y, &guard_orientation);
+            if (is_loop) {
+                println!("Loop detected at: ({}, {})", x, y);
+                modified_map_loop += 1;
+            } else {
+                println!("No loop detected at: ({}, {})", x, y);
             }
         }
-        println!();
     }
 
-    println!("Count: {}", count);
     println!("Modified map loop: {}", modified_map_loop);
 } 
 
-fn check_modified_map_for_loop(origmalmap: &Vec<Vec<char>>, asteps: &Vec<(usize,usize,Orientation)>, aguard_x: &usize, aguard_y: &usize, aguard_orientation: &Orientation, len_x: &usize, len_y: &usize) -> bool {
-    let mut map = modify_map(&origmalmap, &aguard_x, &aguard_y, &aguard_orientation);
-    let mut steps = asteps.clone();
+fn has_passed(map: &Vec<Vec<char>>, x: &usize, y: &usize, len_x: &usize, len_y: &usize) -> bool {
+    if *y > 0 && map[*y-1][*x] == 'X' {
+        return true;
+    }
+    if *y < (*len_y - 1) && map[*y+1][*x] == 'X' {
+        return true;
+    }
+    if *x > 0 && map[*y][*x-1] == 'X' {
+        return true;
+    }
+    if *x < (*len_x - 1) && map[*y][*x+1] == 'X' {
+        return true;
+    }
+    return false;
+}
+
+fn check_guard_loop(mut map: Vec<Vec<char>>, aguard_x: &usize, aguard_y: &usize, aguard_orientation: &Orientation) -> bool {
     let mut guard_x = *aguard_x;
     let mut guard_y = *aguard_y;
     let mut guard_orientation = *aguard_orientation;
+    let len_y = map.len();
+    let len_x: usize = map[0].len();
     // initialize with empty string vec
-    let mut turns = 0;
-    let start_x = guard_x;
-    let start_y = guard_y;
-    let start_orientation = guard_orientation;
+    let mut steps: Vec<(usize,usize,Orientation)> = vec![];
+    
+    // println!(".");
+
+    let mut is_loop = false;
 
     while true {
         let old_x = guard_x;
@@ -106,8 +88,8 @@ fn check_modified_map_for_loop(origmalmap: &Vec<Vec<char>>, asteps: &Vec<(usize,
 
         map[old_y][old_x] = 'X';
         steps.push((guard_x, guard_y, guard_orientation));
-        // println!("...Guard is at: ({}, {}), facing: {}", guard_x, guard_y, guard_orientation);
-
+        // println!("Guard is at: ({}, {}), facing: {}, step: {}", guard_x, guard_y, guard_orientation, steps.len());
+        
         let object_ahead = get_object_ahead(&map, &guard_x, &guard_y, &guard_orientation, &len_x, &len_y);
 
         match object_ahead {
@@ -115,7 +97,6 @@ fn check_modified_map_for_loop(origmalmap: &Vec<Vec<char>>, asteps: &Vec<(usize,
                 break;
             }
             '#' => {
-                turns += 1;
                 match guard_orientation {
                     Orientation::N => {
                         guard_orientation = Orientation::E;
@@ -150,49 +131,94 @@ fn check_modified_map_for_loop(origmalmap: &Vec<Vec<char>>, asteps: &Vec<(usize,
         }
 
         if steps.contains(&(guard_x, guard_y, guard_orientation)) {
-            return true;
+            is_loop = true;
+            break;
         }
-    }
-    return false;
-} 
 
-fn modify_map(map: &Vec<Vec<char>>, guard_x: &usize, guard_y: &usize, guard_orientation: &Orientation) -> Vec<Vec<char>> {
+        // map[guard_y][guard_x] = 'G';
+    }
+
+    return is_loop;
+}
+
+fn solve_guard_track(amap: &Vec<Vec<char>>) -> Vec<Vec<char>> {
+    let mut map: Vec<Vec<char>> = amap.clone();
+    let mut guard_x = 0 as usize;
+    let mut guard_y = 0 as usize;
+    let mut guard_orientation = Orientation::N;
+    let len_y = map.len();
+    let len_x: usize = map[0].len();
+    // initialize with empty string vec
+    let mut steps: Vec<(usize,usize,Orientation)> = vec![];
+    
+    (guard_x, guard_y, guard_orientation) = find_guard(&map);
+    // println!(".");
+
+    let mut is_loop = false;
+
+    while true {
+        let old_x = guard_x;
+        let old_y = guard_y;
+
+        map[old_y][old_x] = 'X';
+        steps.push((guard_x, guard_y, guard_orientation));
+        // println!("Guard is at: ({}, {}), facing: {}, step: {}", guard_x, guard_y, guard_orientation, steps.len());
+        
+        let object_ahead = get_object_ahead(&map, &guard_x, &guard_y, &guard_orientation, &len_x, &len_y);
+
+        match object_ahead {
+            'A' => {
+                break;
+            }
+            '#' => {
+                match guard_orientation {
+                    Orientation::N => {
+                        guard_orientation = Orientation::E;
+                    }
+                    Orientation::E => {
+                        guard_orientation = Orientation::S;
+                    }
+                    Orientation::S => {
+                        guard_orientation = Orientation::W;
+                    }
+                    Orientation::W => {
+                        guard_orientation = Orientation::N;
+                    }
+                }
+            }
+            _ => {
+                match guard_orientation {
+                    Orientation::N => {
+                        guard_y -= 1;
+                    }
+                    Orientation::E => {
+                        guard_x += 1;
+                    }
+                    Orientation::S => {
+                        guard_y += 1;
+                    }
+                    Orientation::W => {
+                        guard_x -= 1;
+                    }
+                }
+            }
+        }
+
+        if steps.contains(&(guard_x, guard_y, guard_orientation)) {
+            is_loop = true;
+            break;
+        }
+
+        map[guard_y][guard_x] = 'G';
+    }
+
+    return map;
+}
+
+fn modify_map(map: &Vec<Vec<char>>, x: &usize, y: &usize) -> Vec<Vec<char>> {
     let mut modified_map = map.clone();
-
-    match *guard_orientation {
-        Orientation::N => {
-            if *guard_y == 0 {
-                return modified_map;
-            }
-            let new_y = guard_y - 1;
-            modified_map[new_y][*guard_x] = '#';
-            return modified_map;
-        }
-        Orientation::E => {
-            if *guard_x == modified_map[0].len() - 1 {
-                return modified_map;
-            }
-            let new_x = guard_x + 1;
-            modified_map[*guard_y][new_x] = '#';
-            return modified_map;
-        }
-        Orientation::S => {
-            if *guard_y == modified_map.len() - 1 {
-                return modified_map;
-            }
-            let new_y = guard_y + 1;
-            modified_map[new_y][*guard_x] = '#';
-            return modified_map;
-        }
-        Orientation::W => {
-            if *guard_x == 0 {
-                return modified_map;
-            }
-            let new_x = guard_x - 1;
-            modified_map[*guard_y][new_x] = '#';
-            return modified_map;
-        }
-    }
+    modified_map[*y][*x] = '#';
+    return modified_map;
 }
 
 fn get_object_ahead(map: &Vec<Vec<char>>, guard_x: &usize, guard_y: &usize, guard_orientation: &Orientation, len_x: &usize, len_y: &usize) -> char {
