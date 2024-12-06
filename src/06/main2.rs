@@ -11,7 +11,7 @@ fn main() {
     let len_x: usize = map[0].len();
     // initialize with empty string vec
     let mut modified_map_loop = 0;
-    let mut steps: Vec<String> = vec![];
+    let mut steps: Vec<(usize,usize,Orientation)> = vec![];
     
     (guard_x, guard_y, guard_orientation) = find_guard(&map);
     println!("Guard is at: ({}, {}), facing: {}", guard_x, guard_y, guard_orientation);
@@ -22,7 +22,7 @@ fn main() {
         let old_y = guard_y;
 
         map[old_y][old_x] = 'X';
-        steps.push(format!("{}, {}, {}", guard_x, guard_y, guard_orientation));
+        steps.push((guard_x, guard_y, guard_orientation));
         println!("Guard is at: ({}, {}), facing: {}, step: {}", guard_x, guard_y, guard_orientation, steps.len());
         
         if check_modified_map_for_loop(&map, &steps, &guard_x, &guard_y, &guard_orientation, &len_x, &len_y) {
@@ -88,7 +88,7 @@ fn main() {
     println!("Modified map loop: {}", modified_map_loop);
 } 
 
-fn check_modified_map_for_loop(origmalmap: &Vec<Vec<char>>, asteps: &Vec<String>, aguard_x: &usize, aguard_y: &usize, aguard_orientation: &Orientation, len_x: &usize, len_y: &usize) -> bool {
+fn check_modified_map_for_loop(origmalmap: &Vec<Vec<char>>, asteps: &Vec<(usize,usize,Orientation)>, aguard_x: &usize, aguard_y: &usize, aguard_orientation: &Orientation, len_x: &usize, len_y: &usize) -> bool {
     let mut map = modify_map(&origmalmap, &aguard_x, &aguard_y, &aguard_orientation);
     let mut steps = asteps.clone();
     let mut guard_x = *aguard_x;
@@ -105,7 +105,7 @@ fn check_modified_map_for_loop(origmalmap: &Vec<Vec<char>>, asteps: &Vec<String>
         let old_y = guard_y;
 
         map[old_y][old_x] = 'X';
-        steps.push(format!("{}, {}, {}", guard_x, guard_y, guard_orientation));
+        steps.push((guard_x, guard_y, guard_orientation));
         // println!("...Guard is at: ({}, {}), facing: {}", guard_x, guard_y, guard_orientation);
 
         let object_ahead = get_object_ahead(&map, &guard_x, &guard_y, &guard_orientation, &len_x, &len_y);
@@ -149,7 +149,7 @@ fn check_modified_map_for_loop(origmalmap: &Vec<Vec<char>>, asteps: &Vec<String>
             }
         }
 
-        if steps.contains(&format!("{}, {}, {}", guard_x, guard_y, guard_orientation)) {
+        if steps.contains(&(guard_x, guard_y, guard_orientation)) {
             return true;
         }
     }
